@@ -5,12 +5,10 @@ export function initScene(
   scene: THREE.Scene,
   camera: THREE.PerspectiveCamera
 ) {
-  const roadGroups: THREE.Group[] = []; // 👈 unified groups
+  const roadGroups: THREE.Group[] = [];
   const obstacles: (THREE.Object3D | null)[] = [];
-
   let segmentLength = 1;
 
-  // --- Road setup ---
   const roadModel = models["/assets/models/road.glb"].clone();
   const box = new THREE.Box3().setFromObject(roadModel);
   const size = new THREE.Vector3();
@@ -31,66 +29,59 @@ export function initScene(
   const startZ = visibleFrontZ + segmentLength / 2;
   const initialSegments = 20;
 
-  // Models
   const streetLightModel = models["/assets/models/street_light.glb"];
   const fenceModel = models["/assets/models/road_fence.glb"];
 
-  // Fence size
   const fenceBox = new THREE.Box3().setFromObject(fenceModel);
   const fenceSize = new THREE.Vector3();
   fenceBox.getSize(fenceSize);
   const fenceLength = fenceSize.x;
 
-  // Plains
   const plainWidth = 200;
   const plainMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22 });
 
   for (let i = 0; i < initialSegments; i++) {
     const zPos = startZ - i * segmentLength;
 
-    // --- Group for this segment ---
     const group = new THREE.Group();
+    group.position.set(0, 0, zPos);
 
-    // --- Road ---
+    // Road
     const seg = roadModel.clone(true);
-    seg.position.set(0, 0.01, zPos);
+    seg.position.set(0, 0.01, 0);
     group.add(seg);
 
     const offsetX = desiredWidth / 2.2;
 
-    // --- Plains ---
+    // Plains
     const leftPlain = new THREE.Mesh(
       new THREE.PlaneGeometry(plainWidth, segmentLength),
       plainMaterial
     );
     leftPlain.rotation.x = -Math.PI / 2;
-    leftPlain.position.set(-desiredWidth * 1.5, -0.5, zPos);
+    leftPlain.position.set(-desiredWidth * 1.5, -0.5, 0);
     group.add(leftPlain);
 
-    const rightPlain = new THREE.Mesh(
-      new THREE.PlaneGeometry(plainWidth, segmentLength),
-      plainMaterial
-    );
-    rightPlain.rotation.x = -Math.PI / 2;
-    rightPlain.position.set(desiredWidth * 1.5, -0.5, zPos);
+    const rightPlain = leftPlain.clone();
+    rightPlain.position.x = desiredWidth * 1.5;
     group.add(rightPlain);
 
-    // --- Streetlights ---
+    // Lights
     const leftLight = streetLightModel.clone(true);
-    leftLight.position.set(-offsetX, 0.25, zPos);
+    leftLight.position.set(-offsetX, 0.25, 0);
     leftLight.scale.set(0.7, 0.7, 0.7);
     leftLight.rotateY(Math.PI / 2);
     group.add(leftLight);
 
     const rightLight = streetLightModel.clone(true);
-    rightLight.position.set(offsetX, 0.25, zPos);
+    rightLight.position.set(offsetX, 0.25, 0);
     rightLight.scale.set(0.7, 0.7, 0.7);
     rightLight.rotateY(-Math.PI / 2);
     group.add(rightLight);
 
-    // --- Fences ---
-    let currentZ = zPos - segmentLength / 2;
-    while (currentZ < zPos + segmentLength / 2) {
+    // Fences
+    let currentZ = -segmentLength / 2;
+    while (currentZ < segmentLength / 2) {
       if (Math.random() > 0.2) {
         const leftFence = fenceModel.clone(true);
         leftFence.position.set(-offsetX, 0.25, currentZ);
@@ -106,16 +97,15 @@ export function initScene(
       currentZ += fenceLength + randomGap;
     }
 
-    // --- Initial obstacle ---
-    const obs = spawnObstacle(zPos, desiredWidth, group, models);
+    // Obstacle
+    const obs = spawnObstacle(0, desiredWidth, group, models); // relative to group
     obstacles.push(obs);
 
-    // --- Add whole group ---
     scene.add(group);
     roadGroups.push(group);
   }
 
-  // --- Bike ---
+  // Bike
   const bike = models["/assets/models/bike.glb"].clone();
   bike.scale.set(1.2, 1.2, 1.2);
   bike.rotation.set(0, Math.PI, 0);
@@ -125,52 +115,35 @@ export function initScene(
   let frontTyre: THREE.Mesh | undefined;
   let rearTyre: THREE.Mesh | undefined;
 
-  const frontNode = bike.getObjectByName("Object_40");
-  const rearNode = bike.getObjectByName("Object_47");
-
   bike.traverse((child) => {
-    if ((child as THREE.Mesh).isMesh && child.name === "Object_47") {
+    if ((child as THREE.Mesh).isMesh && child.name === "Object_47")
       rearTyre = child as THREE.Mesh;
-    }
-  });
-
-  frontNode?.traverse((child) => {
-    if ((child as THREE.Mesh).isMesh) {
+    if ((child as THREE.Mesh).isMesh && child.name === "Object_40")
       frontTyre = child as THREE.Mesh;
-    }
   });
 
-  rearNode?.traverse((child) => {
-    if ((child as THREE.Mesh).isMesh) {
-      rearTyre = child as THREE.Mesh;
-    }
-  });
-
-  // --- Sky ---
+  // Sky
   const sky = models["/assets/models/sky.glb"].clone();
   sky.scale.set(10, 10, 10);
   sky.position.set(0, 0, -50);
   camera.add(sky);
   scene.add(camera);
 
-  // --- Recycling ---
   function recycleSegments(cameraZ: number) {
     for (let i = 0; i < roadGroups.length; i++) {
       const group = roadGroups[i];
-      if (group.position.z - cameraZ > segmentLength) {
+      if (group.position.z - cameraZ > segmentLength * 10) {
+        // Find the front-most group (lowest z)
         const front = roadGroups.reduce((a, b) =>
           a.position.z < b.position.z ? a : b
         );
+
+        // Move this group to the front
         group.position.z = front.position.z - segmentLength;
 
-        // recycle obstacle inside group
+        // ♻️ recycle obstacle inside this group
         if (obstacles[i]) group.remove(obstacles[i]!);
-        obstacles[i] = spawnObstacle(
-          group.position.z,
-          desiredWidth,
-          group,
-          models
-        );
+        obstacles[i] = spawnObstacle(0, desiredWidth, group, models);
       }
     }
   }

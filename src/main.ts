@@ -17,6 +17,8 @@ camera.lookAt(0, 0, 0);
 // --- Renderer ---
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.domElement.style.position = "absolute";
+renderer.domElement.style.zIndex = "0";
 document.body.appendChild(renderer.domElement);
 
 // Resize
@@ -34,67 +36,78 @@ scene.add(dirLight);
 
 // --- Loader UI ---
 const loaderDiv = document.createElement("div");
-loaderDiv.style.position = "absolute";
-loaderDiv.style.top = "50%";
-loaderDiv.style.left = "50%";
-loaderDiv.style.transform = "translate(-50%, -50%)";
-loaderDiv.style.fontSize = "24px";
-loaderDiv.style.fontFamily = "Arial, sans-serif";
-loaderDiv.style.color = "white";
+Object.assign(loaderDiv.style, {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  fontSize: "24px",
+  fontFamily: "Arial, sans-serif",
+  color: "white",
+  zIndex: "11",
+});
 loaderDiv.innerText = "Loading: 0%";
 document.body.appendChild(loaderDiv);
 
 // --- Status UI ---
 const statusDiv = document.createElement("div");
-statusDiv.style.position = "absolute";
-statusDiv.style.top = "20px";
-statusDiv.style.right = "20px";
-statusDiv.style.fontSize = "24px";
-statusDiv.style.fontFamily = "Arial, sans-serif";
-statusDiv.style.color = "white";
-statusDiv.style.backgroundColor = "rgba(0,0,0,0.5)";
-statusDiv.style.padding = "10px 15px";
-statusDiv.style.borderRadius = "8px";
+Object.assign(statusDiv.style, {
+  position: "absolute",
+  top: "20px",
+  right: "20px",
+  fontSize: "24px",
+  fontFamily: "Arial, sans-serif",
+  color: "white",
+  backgroundColor: "rgba(0,0,0,0.5)",
+  padding: "10px 15px",
+  borderRadius: "8px",
+  zIndex: "12",
+});
 statusDiv.innerText = "Speed: 0 km/h | Gear: N";
 document.body.appendChild(statusDiv);
 
 // --- Road Rash Style Start Screen ---
 const startScreen = document.createElement("div");
-startScreen.style.position = "absolute";
-startScreen.style.top = "0";
-startScreen.style.left = "0";
-startScreen.style.width = "100%";
-startScreen.style.height = "100%";
-startScreen.style.backgroundImage = "url('/assets/images/start-bg.jpg')"; // add a splash background
-startScreen.style.backgroundSize = "cover";
-startScreen.style.backgroundPosition = "center";
-startScreen.style.display = "flex";
-startScreen.style.flexDirection = "column";
-startScreen.style.alignItems = "center";
-startScreen.style.justifyContent = "center";
-startScreen.style.zIndex = "10";
-startScreen.style.color = "white";
-startScreen.style.fontFamily = "'Press Start 2P', monospace"; // retro font (Google Fonts)
-startScreen.style.backgroundColor = "rgba(0,0,0,1)";
+Object.assign(startScreen.style, {
+  position: "absolute",
+  top: "0",
+  left: "0",
+  width: "100%",
+  height: "100%",
+  backgroundImage: "url('/assets/images/start-bg.jpg')",
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: "99",
+  color: "white",
+  fontFamily: "'Press Start 2P', monospace",
+  backgroundColor: "rgba(0,0,0,1)",
+});
 
 // Title
 const title = document.createElement("h1");
 title.innerText = "ROAD RASH 3D";
-title.style.fontSize = "64px";
-title.style.marginBottom = "50px";
-title.style.textShadow = "0 0 20px red, 0 0 40px orange";
-title.style.animation = "glow 1.5s infinite alternate";
+Object.assign(title.style, {
+  fontSize: "64px",
+  marginBottom: "50px",
+  textShadow: "0 0 20px red, 0 0 40px orange",
+  animation: "glow 1.5s infinite alternate",
+});
 startScreen.appendChild(title);
 
-// Menu container
+// Menu
 const menu = document.createElement("div");
-menu.style.display = "flex";
-menu.style.flexDirection = "column";
-menu.style.gap = "20px";
-menu.style.textAlign = "center";
+Object.assign(menu.style, {
+  display: "flex",
+  flexDirection: "column",
+  gap: "20px",
+  textAlign: "center",
+});
 startScreen.appendChild(menu);
 
-// Menu options
 const options = ["Start Game", "Options", "Exit"];
 let selectedIndex = 0;
 const buttons: HTMLDivElement[] = [];
@@ -102,13 +115,14 @@ const buttons: HTMLDivElement[] = [];
 options.forEach((opt, i) => {
   const btn = document.createElement("div");
   btn.innerText = opt;
-  btn.style.fontSize = "28px";
-  btn.style.cursor = "pointer";
-  btn.style.padding = "10px 20px";
-  btn.style.borderRadius = "6px";
-  btn.style.transition = "all 0.2s";
-  btn.style.textShadow = "0 0 10px black";
-
+  Object.assign(btn.style, {
+    fontSize: "28px",
+    cursor: "pointer",
+    padding: "10px 20px",
+    borderRadius: "6px",
+    transition: "all 0.2s",
+    textShadow: "0 0 10px black",
+  });
   btn.onclick = () => handleMenuSelect(opt);
   buttons.push(btn);
   menu.appendChild(btn);
@@ -127,7 +141,6 @@ function updateSelection() {
 }
 updateSelection();
 
-// Keyboard navigation
 window.addEventListener("keydown", (e) => {
   if (e.key === "ArrowUp") {
     selectedIndex = (selectedIndex - 1 + options.length) % options.length;
@@ -142,7 +155,6 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
-// Handle actions
 function handleMenuSelect(opt: string) {
   if (opt === "Start Game") {
     document.body.removeChild(startScreen);
@@ -150,14 +162,12 @@ function handleMenuSelect(opt: string) {
   } else if (opt === "Options") {
     alert("Options not implemented yet!");
   } else if (opt === "Exit") {
-    window.close(); // only works for opened windows; can just hide instead
-    startScreen.style.display = "none";
+    startScreen.style.display = "none"; // safe exit
   }
 }
-
 document.body.appendChild(startScreen);
 
-// Add glow animation to the page
+// Glow animation
 const styleTag = document.createElement("style");
 styleTag.innerHTML = `
 @keyframes glow {
@@ -167,7 +177,7 @@ styleTag.innerHTML = `
 `;
 document.head.appendChild(styleTag);
 
-// --- Lazy load GLTFLoader and scene setup ---
+// --- Load Models ---
 async function loadModels() {
   const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader");
   const loader = new GLTFLoader();
@@ -222,7 +232,6 @@ async function loadModels() {
 async function startGame() {
   const models = await loadModels();
 
-  // Load scene setup
   const { initScene } = await import("./sceneSetup");
   const {
     bike,
@@ -232,14 +241,12 @@ async function startGame() {
     desiredWidth,
     obstacles,
     recycleSegments,
-    roadGroups, // ✅ new name
+    roadGroups,
   } = initScene(models, scene, camera);
 
-  // Setup controls
   const { setupControls, controlState } = await import("./controls");
   setupControls();
 
-  // Start animation
   const { animate } = await import("./animate");
   animate({
     scene,
