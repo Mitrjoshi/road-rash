@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { spawnObstacle } from "./spawn/spawnObstacles";
+import { getRandomBuilding } from "./utils/getRandomBuilding";
 
 export function initScene(
   models: { [key: string]: THREE.Object3D },
@@ -25,12 +27,23 @@ export function initScene(
   box.getSize(size);
   segmentLength = size.z;
 
+  // Blocks (temporary buildings)
+
   const visibleFrontZ = camera.position.z - 9.2;
   const startZ = visibleFrontZ + segmentLength / 2;
   const initialSegments = 20;
 
   const streetLightModel = models["/assets/models/street_light.glb"];
   const fenceModel = models["/assets/models/road_fence.glb"];
+  const buildingRoot = models["/assets/models/buildings.glb"];
+
+  const availableBuildings: THREE.Object3D[] = [];
+
+  buildingRoot.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh && child.name.startsWith("Building")) {
+      availableBuildings.push(child);
+    }
+  });
 
   const fenceBox = new THREE.Box3().setFromObject(fenceModel);
   const fenceSize = new THREE.Vector3();
@@ -97,6 +110,27 @@ export function initScene(
       currentZ += fenceLength + randomGap;
     }
 
+    // Buildings block
+    // Buildings
+    const buildingOffsetX = desiredWidth * 3;
+    const buildingScale = 4;
+
+    // Buildings
+
+    const leftBuilding = getRandomBuilding(availableBuildings);
+    if (leftBuilding) {
+      leftBuilding.position.set(-buildingOffsetX, 0, 0);
+      leftBuilding.scale.set(buildingScale, buildingScale, buildingScale);
+      group.add(leftBuilding);
+    }
+
+    const rightBuilding = getRandomBuilding(availableBuildings);
+    if (rightBuilding) {
+      rightBuilding.position.set(buildingOffsetX, 0, 0);
+      rightBuilding.scale.set(buildingScale, buildingScale, buildingScale);
+      group.add(rightBuilding);
+    }
+
     // Obstacle
     const obs = spawnObstacle(0, desiredWidth, group, models); // relative to group
     obstacles.push(obs);
@@ -158,54 +192,4 @@ export function initScene(
     obstacles,
     recycleSegments,
   };
-}
-
-// --- Spawn obstacle helper ---
-export function spawnObstacle(
-  zPos: number,
-  roadWidth: number,
-  parent: THREE.Group | THREE.Scene,
-  models: { [key: string]: THREE.Object3D }
-): THREE.Object3D | null {
-  if (Math.random() < 0.3) {
-    const baseModel = models["/assets/models/road_block.glb"];
-    if (!baseModel) {
-      console.warn("road_block.glb not found in models!");
-      return null;
-    }
-
-    const obstacle = baseModel.clone(true);
-    const maxX = roadWidth / 3;
-    const randomX = THREE.MathUtils.randFloat(-maxX, maxX);
-
-    obstacle.position.set(randomX, 0.5, zPos);
-    obstacle.scale.set(1.5, 1.5, 1.5);
-
-    const blockBox = new THREE.Box3().setFromObject(obstacle);
-    const blockSize = new THREE.Vector3();
-    blockBox.getSize(blockSize);
-
-    const blockTopY = blockBox.max.y - obstacle.position.y;
-
-    const redLight = new THREE.PointLight(0xff0000, 100, 30);
-    redLight.position.set(0, blockTopY - 0.3, 0);
-    obstacle.add(redLight);
-
-    const bulbGeometry = new THREE.SphereGeometry(0.12, 16, 16);
-    const positionAttr = bulbGeometry.attributes.position;
-    for (let i = 0; i < positionAttr.count; i++) {
-      const x = positionAttr.getX(i);
-      const y = positionAttr.getY(i);
-      const z = positionAttr.getZ(i);
-      const noise = (Math.random() - 0.3) * 0.05;
-      positionAttr.setXYZ(i, x + noise, y + noise, z + noise);
-    }
-    bulbGeometry.computeVertexNormals();
-
-    obstacle.rotateY(Math.random() * Math.PI * 2);
-
-    parent.add(obstacle);
-    return obstacle;
-  }
-  return null;
 }
