@@ -192,7 +192,6 @@ async function loadModels() {
     "/assets/models/milkyway.glb",
     "/assets/models/tree.glb",
     "/assets/models/road_fence.glb",
-    "/assets/models/buildings.glb",
   ];
 
   return new Promise<{ [key: string]: THREE.Object3D }>((resolve) => {

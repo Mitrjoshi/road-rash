@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { spawnObstacle } from "./spawn/spawnObstacles";
-import { getRandomBuilding } from "./utils/getRandomBuilding";
 
 export function initScene(
   models: { [key: string]: THREE.Object3D },
@@ -35,15 +34,8 @@ export function initScene(
 
   const streetLightModel = models["/assets/models/street_light.glb"];
   const fenceModel = models["/assets/models/road_fence.glb"];
-  const buildingRoot = models["/assets/models/buildings.glb"];
 
   const availableBuildings: THREE.Object3D[] = [];
-
-  buildingRoot.traverse((child) => {
-    if ((child as THREE.Mesh).isMesh && child.name.startsWith("Building")) {
-      availableBuildings.push(child);
-    }
-  });
 
   const fenceBox = new THREE.Box3().setFromObject(fenceModel);
   const fenceSize = new THREE.Vector3();
@@ -108,27 +100,6 @@ export function initScene(
       }
       const randomGap = Math.random() < 0.15 ? fenceLength * 0.5 : 0;
       currentZ += fenceLength + randomGap;
-    }
-
-    // Buildings block
-    // Buildings
-    const buildingOffsetX = desiredWidth * 3;
-    const buildingScale = 4;
-
-    // Buildings
-
-    const leftBuilding = getRandomBuilding(availableBuildings);
-    if (leftBuilding) {
-      leftBuilding.position.set(-buildingOffsetX, 0, 0);
-      leftBuilding.scale.set(buildingScale, buildingScale, buildingScale);
-      group.add(leftBuilding);
-    }
-
-    const rightBuilding = getRandomBuilding(availableBuildings);
-    if (rightBuilding) {
-      rightBuilding.position.set(buildingOffsetX, 0, 0);
-      rightBuilding.scale.set(buildingScale, buildingScale, buildingScale);
-      group.add(rightBuilding);
     }
 
     // Obstacle

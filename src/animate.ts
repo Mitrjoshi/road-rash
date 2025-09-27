@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { spawnObstacle } from "./sceneSetup";
 
 export function animate({
   scene,
